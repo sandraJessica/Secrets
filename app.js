@@ -1,96 +1,76 @@
 //jshint esversion:6
-//important package for environment variables (add .env file to .gitignore)
+// Gives us access to variables set in the .env file via `process.env.VARIABLE_NAME` syntax
 require('dotenv').config();
 const express = require("express");
 const ejs = require("ejs");
-const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
-const saltRounds = 10;
+const session = require("express-session");
+var passport = require("passport");
+var crypto = require("crypto");
+var routes = require("./routes");
+const connection = require("./config/database");
+// note: requiring passport-local is not necessary
+const passportLocalMongoose = require("passport-local-mongoose");
 
+// Package documentation - https://www.npmjs.com/package/connect-mongo
+const MongoStore = require('connect-mongo');
+
+// Create the Express application
 const app = express();
+
 const port = 3000;
 
 app.use(express.static("public"));
 app.set("view engine", "ejs");
-app.use(bodyParser.urlencoded({
-  extended: true
+
+//express built-in "body-parser"
+app.use(express.json());
+app.use(express.urlencoded({extended: true}));
+
+/**
+ * -------------- SESSION SETUP ----------------
+ */
+
+//new
+const sessionStore = MongoStore.create({mongoUrl: process.env.DB_STRING, collectionName: "sessions"});
+
+// npm package express-session
+app.use(session({
+  // should be inside an environment variable
+  secret: process.env.SECRET,
+  // options resave and saveUninitialized treat how session reacts when there are no changes in the browser
+  resave: false,
+  saveUninitialized: true,
+  store: sessionStore,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24 // Sets an expires property that equals 1 day
+  }
 }));
 
-// mongoose DB connection
-mongoose.connect('mongodb://localhost:27017/userDB');
+/**
+ * -------------- PASSPORT AUTHENTICATION ----------------
+ */
+
+ // Need to require the entire Passport config module so app.js knows about it
+ require('./config/passport');
 
 
 
-const userSchema = new mongoose.Schema({
-  email: String,
-  password: String
-});
 
+ /**
+  * -------------- ROUTES ----------------
+  */
 
-// mongoose Model
-const User = new mongoose.model("User", userSchema);
-
-app.get("/", (req, res) => {
-  res.render("home");
-});
-
-app.get("/login", (req, res) => {
-  res.render("login");
-});
-
-app.get("/register", (req, res) => {
-  res.render("register");
-});
-
-app.post("/register", (req, res) => {
-
-  bcrypt.hash(req.body.password, saltRounds, function(err, hash) {
-
-    const newUser = new User({
-      email: req.body.username,
-      password: hash
-    });
-
-    newUser.save((err) => {
-      if (err) {
-        console.log(err);
-      } else {
-        res.render("secrets");
-      }
-    });
-  });
-});
-
-app.post("/login", (req, res) => {
-
-  const username = req.body.username;
-  const password = req.body.password;
-
-  User.findOne({
-    email: username}, (err, foundUser) => {
-    if (err) {
-      console.log(err);
-    } else {
-      if (foundUser) {
-        bcrypt.compare(password, foundUser.password, function(err, result) {
-          if(result === true) {
-            res.render("secrets");
-          } else {
-            console.log(err);
-          }
-        });
-      }
-    }
-  });
-});
+ // Imports all of the routes from ./routes/index.js
+ app.use(routes);
 
 
 
 
 
-
-
+/**
+ * -------------- SERVER ----------------
+ */
 
 
 app.listen(port, () => {
