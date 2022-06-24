@@ -14,11 +14,12 @@ const connection = mongoose.createConnection(conn, {useNewUrlParser: true, useUn
 const userSchema = new mongoose.Schema({
   username: String,
   hash: String,
-  salt: String
+  salt: String,
+  //admin: Boolean
 });
 
 // mongoose Model
-const User = new mongoose.model("User", userSchema);
+const User = connection.model("User", userSchema);
 
 //export the connection
 module.exports = connection;

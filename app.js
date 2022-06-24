@@ -25,46 +25,58 @@ app.set("view engine", "ejs");
 
 //express built-in "body-parser"
 app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({
+  extended: true
+}));
 
 /**
  * -------------- SESSION SETUP ----------------
  */
 
 //new
-const sessionStore = MongoStore.create({mongoUrl: process.env.DB_STRING, collectionName: "sessions"});
+const sessionStore = MongoStore.create({
+  mongoUrl: process.env.DB_STRING,
+  collectionName: "sessions"
+});
 
 // npm package express-session
 app.use(session({
   // should be inside an environment variable
   secret: process.env.SECRET,
-  // options resave and saveUninitialized treat how session reacts when there are no changes in the browser
+  // esave: when set to true, this will force the session to save even if nothing changed.  If you don't set this,
+  //the app will still run but you will get a warning in the terminal
   resave: false,
+  // saveUninitialized: Similar to resave, when set true, this forces the session to be saved even if it is unitialized
   saveUninitialized: true,
+  // every new session will be saved in a MongoDB database in a "sessions" table and used to lookup sessions
   store: sessionStore,
   cookie: {
     maxAge: 1000 * 60 * 60 * 24 // Sets an expires property that equals 1 day
   }
 }));
 
+
+
+
 /**
  * -------------- PASSPORT AUTHENTICATION ----------------
  */
 
- // Need to require the entire Passport config module so app.js knows about it
- require('./config/passport');
+
+// includes passport.use(strategy); from passport.js in app.js
+require('./config/passport');
+
+// for every HTTP request our Express app makes, it will execute both:
+app.use(passport.initialize());
+app.use(passport.session());
 
 
+/**
+ * -------------- ROUTES ----------------
+ */
 
-
- /**
-  * -------------- ROUTES ----------------
-  */
-
- // Imports all of the routes from ./routes/index.js
- app.use(routes);
-
-
+// Imports all of the routes from ./routes/index.js
+app.use(routes);
 
 
 
