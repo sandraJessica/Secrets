@@ -67,3 +67,7 @@ passport.deserializeUser((userId, done) => {
     })
     .catch(err => done(err))
 });
+
+// Passport then sets the "req.user" to the "user" returned by the deserializeUser().
+// The "req.user" can now be used within the res.render("login.ejs" {name: req.user.name}, and the "login.ejs" file renders
+// "Kyle has logged in"

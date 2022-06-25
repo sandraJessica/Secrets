@@ -9,8 +9,11 @@ var passport = require("passport");
 var crypto = require("crypto");
 var routes = require("./routes");
 const connection = require("./config/database");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
+const FacebookStrategy = require("passport-facebook").Strategy;
 // note: requiring passport-local is not necessary
 const passportLocalMongoose = require("passport-local-mongoose");
+const User = connection.models.User;
 
 // Package documentation - https://www.npmjs.com/package/connect-mongo
 const MongoStore = require('connect-mongo');
@@ -69,6 +72,49 @@ require('./config/passport');
 // for every HTTP request our Express app makes, it will execute both:
 app.use(passport.initialize());
 app.use(passport.session());
+
+
+/**
+ * -------------- Google OAuth2.0 ----------------
+ */
+
+
+ passport.use(new GoogleStrategy({
+     clientID: process.env.CLIENT_ID,
+     clientSecret: process.env.CLIENT_SECRET,
+     callbackURL: "http://localhost:3000/auth/google/secrets"
+   },
+   function(accessToken, refreshToken, profile, cb) {
+
+
+     User.findOrCreate({ googleId: profile.id }, function (err, user) {
+       return cb(err, user);
+     });
+   }
+ ));
+
+
+ /**
+  * -------------- Facebook OAuth2.0 ----------------
+  */
+
+
+  passport.use(new FacebookStrategy({
+      clientID: process.env.FACEBOOK_APP_ID,
+      clientSecret: process.env.FACEBOOK_APP_SECRET,
+      callbackURL: "http://localhost:3000/auth/facebook/secrets"
+    },
+    function(accessToken, refreshToken, profile, cb) {
+      User.findOrCreate({ facebookId: profile.id }, function (err, user) {
+        return cb(err, user);
+      });
+    }
+  ));
+
+
+
+
+
 
 
 /**

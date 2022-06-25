@@ -5,6 +5,7 @@ const connection = require("../config/database");
 const User = connection.models.User;
 const isAuth = require("./authMiddleware").isAuth;
 const isAdmin = require("./authMiddleware").isAdmin;
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
 /**
  *---------------- Routes -------------------
@@ -23,6 +24,26 @@ router.get("/", (req, res, next) => {
 router.get("/login", (req, res, next) => {
   res.render("login");
 });
+
+router.get("/auth/google",
+  passport.authenticate('google', { scope: ["profile"] }));
+
+router.get("/auth/google/secrets",
+  passport.authenticate('google', { failureRedirect: '/login' }),
+  function(req, res) {
+    // Successful authentication, redirect to secrets.
+    res.redirect('/secrets');
+  });
+
+router.get('/auth/facebook',
+  passport.authenticate('facebook'));
+
+router.get('/auth/facebook/secrets',
+  passport.authenticate('facebook', { failureRedirect: '/login' }),
+  function(req, res) {
+    // Successful authentication, redirect secrets.
+    res.redirect('/secrets');
+  });
 
 
 router.get("/register", (req, res, next) => {
